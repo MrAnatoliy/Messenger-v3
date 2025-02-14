@@ -1,0 +1,7 @@
+fastapi[standard]
+websockets
+pyjwt
+passlib[bcrypt]
+sqlalchemy
+sqlmodel
+python-dotenv

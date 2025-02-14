@@ -1,0 +1,13 @@
+name: messenger-v3-dev-local
+
+services:
+  backend:
+    container_name: backend
+    build: 
+      context: ../../../backend/
+      dockerfile: Dockerfile.dev
+    ports:
+      - 80:80
+    volumes:
+      - ../../../backend/src:/app/backend/src
+    command: ["fastapi", "dev", "./main.py", "--host", "0.0.0.0", "--port", "80"]
