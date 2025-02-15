@@ -11,3 +11,39 @@ services:
     volumes:
       - ../../../backend/src:/app/backend/src
     command: ["fastapi", "dev", "./main.py", "--host", "0.0.0.0", "--port", "80"]
+    environment:
+      # Point your FastAPI app to the PostgreSQL container
+      - USER_DATABASE_URL=postgresql://postgres:postgres@db:5432/messenger_db
+      - CHAT_HISTORY_DATABASE_URL=mongodb://root:changeme@mongodb:27017/messenger_chat_history
+    depends_on:
+      - db
+
+  db:
+    container_name: users_data_db
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=messenger_db
+    ports:
+      - 5433:5432
+    volumes:
+      # Persist database data in a named volume
+      - db_data:/var/lib/postgresql/data
+      # Automatically run init.sql on first startup
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  chat_history_db:
+    container_name: chat_history_db
+    image: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: changeme
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  db_data:
+  mongo_data:

@@ -5,3 +5,4 @@ passlib[bcrypt]
 sqlalchemy
 sqlmodel
 python-dotenv
+psycopg2-binary
