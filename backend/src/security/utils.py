@@ -1,8 +1,14 @@
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
 from typing import Annotated
 
+from src.api.dependencies import get_user_chat_db_session
 from src.schemes.UserInDB import UserInDB  
 
-async def get_user_from_database(username: str) -> UserInDB:
+from src.models.User import User
+
+async def get_user_from_database(username: str, db: Session) -> UserInDB:
     """
     ## Description
     Gets user from database
@@ -11,21 +17,19 @@ async def get_user_from_database(username: str) -> UserInDB:
     :type username: str
 
     :rtype: UserInDB
-    :return: return a scheme UserInDB 
+    :return: return a scheme UserInDB
     """
 
-    if username in fake_users_db:
-        user_dict = fake_users_db[username]
-        return UserInDB(**user_dict)
-    else:
-        return None
+    # TODO implement async database requests!
+    user = db.query(User).where(User.username == username).first()
 
-fake_users_db = {
-    "tolik": {
-        "username": "tolik",
-        "email": "rodionov.tolik@gmail.com",
-        "full_name": "Anatoliy Rodionov",
-        "hashed_password": "$2b$12$sLL78O/b8m2YbBGCsTwluu8MawFQO/IKh1jDo8XuweJOhDcXMkW4y",
-        "disabled": False
-    }
-}
+    if not user:
+        return None
+    
+    return UserInDB(
+        username= user.username,
+        email= user.email,
+        full_name= user.full_name,
+        disabled= user.disabled,
+        hashed_password= user.password_hash
+    )

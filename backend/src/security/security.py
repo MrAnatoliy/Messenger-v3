@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from passlib.context import CryptContext # type: ignore
+from sqlalchemy.orm import Session
 
 import jwt
 
@@ -23,7 +24,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
     return encoded_jwt
 
-async def get_verified_user_from_db(username: str, password: str):
+async def get_verified_user_from_db(username: str, password: str, db: Session):
     """
     ## Description
     Function for getting user from database and verifying his password by checking provided plaintext with users hashed password
@@ -37,7 +38,7 @@ async def get_verified_user_from_db(username: str, password: str):
     :return: return a scheme UserInDB
     """
 
-    user: UserInDB = await get_user_from_database(username)
+    user: UserInDB = await get_user_from_database(username, db)
     if not user:
         return None
     if not verify_password(password, user.hashed_password):
