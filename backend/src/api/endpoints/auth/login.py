@@ -2,15 +2,17 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
+from src.api.dependencies import get_user_chat_db_session
 from src.security.security import create_access_token, get_verified_user_from_db
 from src.schemes.Token import Token
 
 router = APIRouter()
 
 @router.get("/token", response_model = Token)
-async def authenticate(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await get_verified_user_from_db(form_data.username, form_data.password)
+async def authenticate(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_user_chat_db_session)):
+    user = await get_verified_user_from_db(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
