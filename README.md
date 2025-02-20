@@ -7,7 +7,7 @@ This is an simlpe realtime messenger with not so simple architecture including m
 
 # System Architecture
 
-```mermaid
+``` mermaid
 graph TD
     %% Client Layer
     subgraph "Client Side"
@@ -70,74 +70,45 @@ graph TD
     API -- "Realtime Chat Updates (WS)" --> SPA
 ```
 
-# Authentication sequence diagram
+# Message flow 
 
 ``` mermaid
-
 sequenceDiagram
-    participant SPA as React SPA
-    participant API as FastAPI Backend
-    participant DB as PostgreSQL
-    participant REDIS as Redis
-    participant EMAIL as Email Service (Celery)
-    participant OAUTH as OAuth Provider
+  participant P1 as Sender
+  participant P2 as Recipient
+  participant P3 as Backend
+  participant P4 as PostgreSQL
+  participant P5 as MongoDB
+  participant P6 as Message Broker
 
-    %% ===============================
-    %% Local Registration with Email Verification
-    %% ===============================
-    note over SPA,API: Local Registration (Unverified)
-    SPA->>API: POST /register {email, password}
-    API->>API: Validate input & hash password
-    API->>DB: Insert new user record (status: unverified)
-    DB-->>API: Return user_id & record
-    API->>EMAIL: Enqueue email verification (include token/link)
-    EMAIL-->>API: Confirmation email queued
-    API-->>SPA: Respond: "Registration successful. Please check your email to verify your account."
+  %% WebSocket Connection Establishment
+  P1 ->>+ P3: Get WS Connection
+  P3 -->>- P1: Connection established successfully
 
-    %% ===============================
-    %% Email Verification Callback
-    %% ===============================
-    note over SPA,API: User clicks email verification link
-    SPA->>API: GET /verify-email?token=XYZ
-    API->>DB: Validate token & update user record (status: verified)
-    DB-->>API: Confirmation updated
-    API->>REDIS: Create session / Store JWT token
-    API-->>SPA: Respond: "Email verified" with JWT token
+  %% Sending the message
+  P1 ->> P3: Send message to RECIPIENT_ID
+  Note right of P3: Sort sender & recipient IDs<br/>to generate a consistent chatroom ID<br/>(LOWER_ID-HIGHER_ID)
 
-    %% ===============================
-    %% Local Login Flow (for verified users)
-    %% ===============================
-    note over SPA,API: Local Login (Verified)
-    SPA->>API: POST /login {email, password}
-    API->>DB: Query user record by email
-    DB-->>API: Return user record (must be verified)
-    API->>API: Verify password hash
-    API->>REDIS: Create session / Store JWT token
-    API-->>SPA: Respond with JWT token
+  %% Chatroom lookup/creation in PostgreSQL
+  P3 ->> P4: Query chatroom LOWER_ID-HIGHER_ID
+  alt Chatroom does not exist
+    P4 -->> P3: None
+    P3 ->>+ P4: Create chatroom LOWER_ID-HIGHER_ID
+    P4 -->>- P3: Chatroom CHATROOM_ID created
+    P3 ->>+ P5: Initialize chat history for CHATROOM_ID
+    P5 -->>- P3: Chat history initialized
+  else Chatroom exists
+    P4 -->> P3: Chatroom CHATROOM_ID found
+  end
 
-    %% ===============================
-    %% OAuth2 Login Flow
-    %% ===============================
-    note over SPA,API: OAuth2 Login (Provider verifies email)
-    SPA->>API: GET /auth/google
-    API-->>SPA: Return redirect URL to Google OAuth
-    SPA->>OAUTH: Redirect to Google OAuth login
-    OAUTH-->>SPA: Display login page (user logs in)
-    OAUTH-->>SPA: Redirect to /auth/google/callback?code=AUTH_CODE
-    SPA->>API: GET /auth/google/callback?code=AUTH_CODE
-    API->>OAUTH: Exchange auth code for access token
-    OAUTH-->>API: Return access token
-    API->>OAUTH: Request user profile (email, oauth_id, verified status)
-    OAUTH-->>API: Return user profile (email_verified: true)
-    API->>DB: Query user record by email / oauth_id
-    alt User exists
-        DB-->>API: Return existing user record
-    else User does not exist
-        API->>DB: Insert new user record with OAuth info (status: verified)
-        DB-->>API: Return new user record
-    end
-    API->>REDIS: Create session / Store JWT token
-    API-->>SPA: Respond with JWT token
+  %% Message Broker flow
+  P3 ->> P6: Enqueue message (CHATROOM_ID)
+  P6 -->> P3: Message enqueued confirmation
+  P6 ->> P2: Deliver message (CHATROOM_ID)
+  P2 -->> P6: Acknowledge receipt
+  P6 -->> P3: Delivery confirmation
 
+  %% Confirm delivery back to the sender
+  P3 ->> P1: Delivery confirmation
 
 ```
