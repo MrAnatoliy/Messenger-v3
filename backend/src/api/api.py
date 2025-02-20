@@ -11,6 +11,10 @@ from src.api.endpoints.user_chat_db import (
     chat_crud
 )
 
+from src.api.endpoints.chat import (
+    message
+)
+
 from src.api.endpoints import (
     hello
 )
@@ -21,6 +25,7 @@ auth_api_router = APIRouter(
 )
 auth_api_router.include_router(login.router, prefix="/login", tags=["login"])
 auth_api_router.include_router(register.router, prefix="/register", tags=["register"])
+auth_api_router.include_router(message.router, prefix="/message", tags=["message"])
 #-------------------------------------------------------------------------------------
 
 

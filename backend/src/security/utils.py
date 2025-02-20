@@ -22,11 +22,11 @@ async def get_user_from_database(username: str, db: Session) -> UserInDB:
 
     # TODO implement async database requests!
     user = db.query(User).where(User.username == username).first()
-
     if not user:
         return None
     
     return UserInDB(
+        id= str(user.id),
         username= user.username,
         email= user.email,
         full_name= user.full_name,

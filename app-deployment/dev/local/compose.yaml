@@ -14,7 +14,7 @@ services:
     environment:
       # Point your FastAPI app to the PostgreSQL container
       - USER_DATABASE_URL=postgresql://postgres:postgres@db:5432/messenger_db
-      - CHAT_HISTORY_DATABASE_URL=mongodb://root:changeme@mongodb:27017/messenger_chat_history
+      - CHAT_HISTORY_DATABASE_URL=mongodb://root:changeme@chat_history_db:27017
     depends_on:
       - db
 
