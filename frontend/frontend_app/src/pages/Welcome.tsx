@@ -1,11 +1,18 @@
 import { Field } from "@/components/ui/field";
 import { InputGroup } from "@/components/ui/input-group";
-import { Box, Button, Heading, HStack, Input, Tabs, VStack } from "@chakra-ui/react";
-import { LuEye, LuLogIn, LuUserPlus } from "react-icons/lu";
+import { Box, Button, Center, Heading, HStack, Input, Tabs, VStack } from "@chakra-ui/react";
+import { useState } from "react";
+import { LuEye, LuEyeOff, LuLogIn, LuUserPlus } from "react-icons/lu";
 
 
 
 export default function Welcome() {
+    const [showPassword, setShowPassword] = useState(false);
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
     return(
         <HStack justify="space-evenly" h="vh">
             <Box w="25%">
@@ -28,6 +35,8 @@ export default function Welcome() {
                             Login
                         </Tabs.Trigger>
                         <Tabs.Trigger 
+                            disabled
+
                             value="register"
                             w="50%"
                             borderRadius="none" 
@@ -59,10 +68,22 @@ export default function Welcome() {
                                 <Input color="mediumBrand" borderColor="lightBrand" _focus={{ borderColor: "mediumBrand"}}/>
                             </Field>
                             <Field label="password" pt="4" color="darkBrand">
-                                <InputGroup w="100%" flex="1" endElement={<Button variant="plain" color="darkBrand" _hover={{ color: "mediumBrand"}}><LuEye/></Button>} >
-                                    <Input type="password" color="mediumBrand" borderColor="lightBrand" _focus={{ borderColor: "mediumBrand"}}/>
+                                <InputGroup w="100%" flex="1" endElement={<Button variant="plain" color="darkBrand" _hover={{ color: "mediumBrand"}} onClick={togglePasswordVisibility}>{showPassword ? <LuEyeOff /> : <LuEye />}</Button>} >
+                                    <Input type={showPassword ? "text" : "password"} color="mediumBrand" borderColor="lightBrand" _focus={{ borderColor: "mediumBrand"}}/>
                                 </InputGroup>
                             </Field>
+                            <Center>
+                            <Button
+                                mt="12"
+                                w="45%"
+                                borderRadius="lg"
+                                bg="lightBrand"
+                                color="bgSimple"
+                                _active={{
+                                    bg: "darkBrand"
+                                }}
+                                >Login</Button>
+                            </Center>
                         </Box>
                     </Tabs.Content>
                     <Tabs.Content value="register">Register Form</Tabs.Content>
