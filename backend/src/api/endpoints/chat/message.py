@@ -1,15 +1,15 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, status, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from src.models.databases.chat_history import get_chat_history_db
 from src.models.Chatroom import Chatroom
 from src.schemes.User import User
 from src.api.dependencies import (
     get_current_active_user,
     get_user_chat_db_session,
-    get_chat_history_db,
     get_current_user_ws
 )
 
@@ -20,13 +20,27 @@ class ConnectionManager:
     async def connect(self, user_id: int, websocket: WebSocket):
         await websocket.accept()
         self.active_connections[user_id] = websocket
+        print(f'active users : {self.active_connections}')
+        await self.broadcast_active_users()
 
-    def disconnection(self, user_id: int):
+    async def disconnection(self, user_id: int):
         self.active_connections.pop(user_id, None)
+        print(f'remaint active users : {self.active_connections}')
+        await self.broadcast_active_users()
 
     async def send_message(self, user_id: int, message: str):
         if user_id in self.active_connections:
             await self.active_connections[user_id].send_text(message)
+
+    async def broadcast_active_users(self):
+        # Notify all connected clients with the updated list of active users
+        active_user_ids = list(self.active_connections.keys())
+        for websocket in self.active_connections.values():
+            print(f'broadcasting active users to : {websocket}')
+            await websocket.send_text(json.dumps({
+                "type": "active_users_update",
+                "active_users": active_user_ids
+            }))
 
 connectionManager = ConnectionManager()
 router = APIRouter()
@@ -84,7 +98,7 @@ async def websocker_endpoint(
             chat_history["messages"].append({
                 "sender_id": current_user.id,
                 "message_text": message_text,
-                "timestamp": datetime.utcnow()
+                "timestamp": datetime.now(timezone.utc)
             })
 
             # Update the chat history document in MongoDB
@@ -97,7 +111,15 @@ async def websocker_endpoint(
                 }}}
             )
 
-            await connectionManager.send_message(int(recipient_id), message_text)
-
+            await connectionManager.send_message(
+                int(recipient_id), 
+                json.dumps({
+                    "type": "message",
+                    "sender_id": current_user.id,
+                    "message": message_text,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            )
     except WebSocketDisconnect:
-        connectionManager.disconnection(int(current_user.id))
+        print(f'user {current_user.username} has been disconnected')
+        await connectionManager.disconnection(int(current_user.id))
