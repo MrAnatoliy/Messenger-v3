@@ -4,18 +4,6 @@ from jwt import PyJWTError
 
 from src.config import settings
 
-
-# Chat history dependencies (MongoDB) 
-from src.models.databases.chat_history import chat_history_db_client, chat_history_db
-
-async def get_chat_history_db():
-    try:
-        yield chat_history_db
-    finally:
-        chat_history_db_client.close()
-
-
-
 # User dependencies (PostgreSQL)
 from src.models.databases.user_chat_db import user_chat_sessionmaker
 
@@ -74,29 +62,32 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
         )
     return current_user
 
-
-
 async def get_current_user_ws(websocket: WebSocket, db: Session = Depends(get_user_chat_db_session)):
     """
-    Extract and validate the JWT from the WebSocket connection headers.
+    Extract and validate the JWT from the WebSocket connection.
+    First, try to get the token from the 'authorization' header.
+    If not available, fall back to the 'token' query parameter.
     Closes the connection if authentication fails.
     """
+    # Try to get token from the 'authorization' header
     auth_header = websocket.headers.get("authorization")
-    if not auth_header:
+    token = None
+    if auth_header:
+        scheme, token = get_authorization_scheme_param(auth_header)
+        if scheme.lower() != "bearer" or not token:
+            token = None  # Reset token if header is invalid
+
+    # Fallback: check query parameters if no valid header token
+    if not token:
+        token = websocket.query_params.get("token")
+
+    if not token:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header"
+            detail="Missing token in headers or query parameters"
         )
-    
-    scheme, token = get_authorization_scheme_param(auth_header)
-    if scheme.lower() != "bearer" or not token:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization scheme"
-        )
-    
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
@@ -112,14 +103,13 @@ async def get_current_user_ws(websocket: WebSocket, db: Session = Depends(get_us
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
         )
-    
-    # Replace this with your actual DB session dependency or client call.
-    user = await get_user_from_database(username=username,db=db)
+
+    user = await get_user_from_database(username=username, db=db)
     if not user:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
         )
-    
+
     return user
