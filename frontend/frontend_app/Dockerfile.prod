@@ -1,0 +1,12 @@
+# Use a Node.js Alpine image for a lightweight build environment
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+CMD ["echo", "Build complete. Static files are in /app/dist."]
