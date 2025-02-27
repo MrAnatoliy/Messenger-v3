@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Box, EmptyState, VStack } from "@chakra-ui/react";
 import Message from "./message";
 import { userStore } from "@/store/storeInstances";
@@ -13,6 +13,7 @@ const ChatArea = observer(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userStore.activeContact?.messages.length]); // re-run when messages length changes
 
   return (
