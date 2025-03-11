@@ -78,3 +78,6 @@ sequenceDiagram
   P3 ->> P1: Delivery confirmation
 
 ```
+
+![image](https://github.com/user-attachments/assets/9e530d27-e18f-4c73-b474-b2d6b0a04158)
+![image](https://github.com/user-attachments/assets/55e4bd2f-f6c3-47a4-a3f3-a79a435fe30e)
