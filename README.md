@@ -28,46 +28,15 @@ graph TD
         MONGO[(MongoDB)]
     end
 
-    subgraph "Session Store"
-        REDIS[Redis]
-    end
-
-    %% Messaging and Background Tasks
-    subgraph "Messaging"
-        RABBIT[RabbitMQ]
-    end
-
-    subgraph "Background Tasks"
-        CELERY[Celery Workers]
-    end
-
-    %% OAuth Providers for External Authentication
-    subgraph "OAuth Providers"
-        GOOGLE[Google OAuth]
-        YANDEX[Yandex OAuth]
-        GITHUB[GitHub OAuth]
-    end
-
     %% Connections from Client to API
     SPA -- "HTTP/WS API Calls" --> API
 
     %% API interactions with Data Stores
     API -- "CRUD (Users, Chatrooms)" --> PG
     API -- "Store/Retrieve Chat History" --> MONGO
-    API -- "Session Management" --> REDIS
-
-    %% API interactions with Messaging & Tasks
-    API -- "Publish/Subscribe (Chat messages)" --> RABBIT
-    API -- "Delegate Tasks (emails, notifications)" --> RABBIT
-    RABBIT -- "Task Queue Broker" --> CELERY
-
-    %% API interactions with OAuth Providers
-    API -- "OAuth2 Authentication" --> GOOGLE
-    API -- "OAuth2 Authentication" --> YANDEX
-    API -- "OAuth2 Authentication" --> GITHUB
 
     %% Realtime Communication for Chat Updates
-    API -- "Realtime Chat Updates (WS)" --> SPA
+    API -- "HTTP Response/Realtime Chat Updates (WS)" --> SPA
 ```
 
 # Message flow 
